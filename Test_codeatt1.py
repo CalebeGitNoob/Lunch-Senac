@@ -1,0 +1,89 @@
+import sqlite3
+import os
+
+# Descobre exatamente onde este arquivo .py está salvo no computador
+diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+caminho_banco = os.path.join(diretorio_atual, "sistema.db")
+
+# Conecta ao banco usando o caminho completo e seguro
+conexao = sqlite3.connect(caminho_banco)
+cursor = conexao.cursor()
+
+# Cria a tabela caso ela ainda não exista
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS produtos (
+        nome TEXT,
+        preco REAL,
+        quantidade INTEGER
+    )
+""")
+conexao.commit()
+
+
+# --- CADASTRO DE PRODUTOS ---
+def cadastrar_produto():
+    print("\n--- CADASTRO DE NOVO PRODUTO ---")
+
+    nome = input("Nome do produto: ").strip()
+    if not nome:
+        print("O nome não pode ficar vazio.\n")
+        return
+
+    try:
+        preco = float(input("Preço (R$): ").strip().replace(",", "."))
+        quantidade = int(input("Quantidade em estoque: ").strip())
+    except ValueError:
+        print("Valor inválido! Use números para preço e quantidade.\n")
+        return
+
+    cursor.execute(
+        "INSERT INTO produtos (nome, preco, quantidade) VALUES (?, ?, ?)",
+        (nome, preco, quantidade),
+    )
+    conexao.commit()
+    print(f"Produto '{nome}' cadastrado com sucesso!\n")
+
+
+# --- CONSULTA DE PRODUTOS ---
+def consultar_produtos():
+    print("\n--- CONSULTA DE PRODUTOS CADASTRADOS ---")
+
+    cursor.execute("SELECT * FROM produtos")
+    itens = cursor.fetchall()
+
+    if not itens:
+        print("Nenhum produto cadastrado no banco de dados até o momento.\n")
+        return
+
+    print("-" * 60)
+    for linha in itens:
+        print(f"Produto: {linha[0]:<20} | Preço: R$ {linha[1]:>8.2f} | Estoque: {linha[2]}")
+    print("-" * 60 + "\n")
+
+
+# --- MENU PRINCIPAL (LOOP DO PROGRAMA) ---
+def main():
+    while True:
+        print("## Lanchonete Ennius Muniz - Senac-DF")
+        print("=== SISTEMA DE CONTROLE (SQLite) ===")
+        print("1. Cadastrar novos produtos")
+        print("2. Consultar produtos salvos")
+        print("3. Sair do sistema")
+
+        opcao = input("Escolha uma opção (1-3): ").strip()
+
+        if opcao == '1':
+            cadastrar_produto()
+        elif opcao == '2':
+            consultar_produtos()
+        elif opcao == '3':
+            print("Encerrando o sistema. Até logo!")
+            break
+        else:
+            print("Opção inválida! Escolha entre 1 e 3.\n")
+
+    conexao.close()
+
+
+if __name__ == "__main__":
+    main()
